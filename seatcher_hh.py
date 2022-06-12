@@ -1,34 +1,31 @@
 import requests
-import json
 
 
-url = 'https://api.hh.ru/vacancies/'
-payload_all = {'text': 'Программист',
-           'area': '1',
-           'currency': 'RUR',
-           'only_with_salary': 'true'}
-
-payload_one_month = {'text': 'Программист',
-           'area': '1',
-           'currency': 'RUR',
-           'only_with_salary': 'true',
-            'period': 30}
-
-response_all = requests.get(url, params=payload_all)
-response_all.raise_for_status()
-all_data = response_all.json()
-
-response_one_month = requests.get(url, params=payload_one_month)
-response_one_month.raise_for_status()
-one_month_data = response_one_month.json()
-
-for vacant in all_data['items']:
-    print(vacant['name'])
-    print(vacant['area']['name'])
-    print('ЗП от', vacant['salary']['from'], vacant['salary']['currency'])
-    print(vacant['published_at'])
-    print()
+PROG_LANGS = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C', 'C#',
+              'Go', 'Shell', 'Objective-C', 'Scala', 'Swift', 'TypeScript']
 
 
-print('Вакансий за всё время:', all_data['found'])
-print('Вакансий за последний месяц:', one_month_data['found'])
+def searh_vacancies(languages: list) -> dict:
+    popular_prog_langs = {}
+
+    for lang in languages:
+        url = 'https://api.hh.ru/vacancies/'
+        payload_all = {'text': f'Программист {lang}',
+                       'area': '1',
+                       'currency': 'RUR',
+                       'only_with_salary': 'true'}
+
+        response = requests.get(url, params=payload_all)
+        response.raise_for_status()
+        response_data = response.json()
+        vacancies_quantity = int(response_data['found'])
+
+        if vacancies_quantity > 100:
+            popular_prog_langs[lang] = vacancies_quantity
+
+    return popular_prog_langs
+
+
+if __name__ == '__main__':
+    popular_langs = searh_vacancies(PROG_LANGS)
+    print(popular_langs)
