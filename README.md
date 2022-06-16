@@ -26,7 +26,7 @@ pip install -r requirements.txt
 
 2) Создайте файл .env в папке со скриптом и внесите в него данные:
 ```
-SJ_TOKEN = 'Token SuperJob'
+SJ_TOKEN='Token SuperJob'
 ```
 
 ### Цель проекта
