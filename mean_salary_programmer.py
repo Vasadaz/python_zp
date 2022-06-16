@@ -5,7 +5,7 @@ from itertools import count
 import requests
 
 from dotenv import load_dotenv
-from terminaltables import SingleTable
+from terminaltables import AsciiTable
 
 PROG_LANGS = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C', 'C#',
               'Go', 'Shell', 'Objective-C', 'Scala', 'Swift', 'TypeScript']
@@ -103,7 +103,7 @@ def predict_rub_salary(vacansies: dict, keyword_salary=None, keyword_from=None, 
 
 
 def make_table(title: str, table_data: list):
-    table_instance = SingleTable(table_data, title)
+    table_instance = AsciiTable(table_data, title)
     return table_instance.table
 
 
