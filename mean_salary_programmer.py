@@ -1,3 +1,6 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+
 import os
 import statistics as stat
 from itertools import count
@@ -11,21 +14,23 @@ HH_MIN_LIMIT = 100
 HH_POPULAR_PROG_LANGS = [['Язык программирования', 'Вакансий найдено',
                           'Вакансий обработано', 'Средняя зарплата']]
 
-PROG_LANGS = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C', 'C#',
-              'Go', 'Shell', 'Objective-C', 'Scala', 'Swift', 'TypeScript']
+# PROG_LANGS = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C', 'C#',
+#              'Go', 'Shell', 'Objective-C', 'Scala', 'Swift', 'TypeScript']
+
+PROG_LANGS = ['JavaScript']
 
 SJ_MIN_LIMIT = 20
 SJ_POPULAR_PROG_LANGS = [['Язык программирования', 'Вакансий найдено',
                           'Вакансий обработано', 'Средняя зарплата']]
 
 
-def search_vacancies_hh(language: str, page=0) -> list:
-    global hh_vacancies_found
+def search_vacancies_hh(language: str, page_number: int) -> list:
+    global HH_MIN_LIMIT, hh_end_page, hh_vacancies_found
 
     url = 'https://api.hh.ru/vacancies/'
     payload = {'text': f'Программист {language}',
-               'area': '2',
-               'page': page,
+               'area': '1',
+               'page': page_number,
                'per_page': 100,
                'currency': 'RUR',
                'only_with_salary': 'true'}
@@ -33,48 +38,53 @@ def search_vacancies_hh(language: str, page=0) -> list:
     page_response = requests.get(url, params=payload)
     page_response.raise_for_status()
     page_data = page_response.json()
-    hh_vacancies_found = int(page_data['found'])
-    #num_pages = page_data['pages']
 
+    end_page = int(page_data['pages']) - 1
+    hh_vacancies_found = int(page_data['found'])
     vacancies = page_data['items']
+
+    if hh_vacancies_found < HH_MIN_LIMIT:
+        hh_end_page = True
+        return []
+
+    if page_number == end_page:
+        hh_end_page = True
 
     return vacancies
 
 
-def search_vacancies_sj(language: str, token: str) -> dict:
-    global SJ_MIN_LIMIT, sj_vacancies_found
+def search_vacancies_sj(language: str, page_number: int, token: str) -> list:
+    global SJ_MIN_LIMIT, SJ_end_page, sj_vacancies_found
 
-    vacancies = {}
+    url = 'https://api.superjob.ru/2.0/vacancies/'
+    head = {'X-Api-App-Id': token}
+    payload = {'keyword': f'Программист {language}',
+               't': 14,
+               'currency': 'rub',
+               'page_number': page_number,
+               'count': 100}
+    page_response = requests.get(url, headers=head, params=payload)
+    page_response.raise_for_status()
+    page_data = page_response.json()
 
-    for page in count(0):
-        url = '	https://api.superjob.ru/2.0/vacancies/'
-        head = {'X-Api-App-Id': token}
-        payload = {'keyword': f'Программист {language}',
-                   't': 14,
-                   'currency': 'rub',
-                   'page': page,
-                   'count': 100}
-        page_response = requests.get(url, headers=head, params=payload)
-        page_response.raise_for_status()
-        page_data = page_response.json()
-        sj_vacancies_found = int(page_data['total'])
-
-        if page == 5 or sj_vacancies_found < SJ_MIN_LIMIT:
-            break
-        else:
-            vacancies[page] = (page_data['objects'])
+    sj_vacancies_found = int(page_data['total'])
+    vacancies = (page_data['objects'])
+    print(page_response.url)
 
     return vacancies
 
 
 def predict_rub_salary(vacancies: list,
-                           keyword_salary=None,
-                           keyword_from=None,
-                           keyword_to=None) -> list:
+                       keyword_salary=None,
+                       keyword_from=None,
+                       keyword_to=None) -> list:
     avg_salaries = []
 
     for vacancy in vacancies:
         if keyword_salary:
+            if vacancy[keyword_salary] == None:
+                print(vacancy)
+                continue
             salary_from = vacancy[keyword_salary][keyword_from]
             salary_to = vacancy[keyword_salary][keyword_to]
         else:
@@ -107,36 +117,48 @@ if __name__ == '__main__':
     load_dotenv(dotenv_path)
     sj_token = os.environ["SJ_TOKEN"]
 
-    hh_vacanсies = []
-    hh_vacancies_found = 0
-    sj_vacancies_found = 0
-
     for lang in PROG_LANGS:
+        '''
+        hh_end_page = False
+        hh_vacancies = []
+        hh_vacancies_found = 0
+        
+        for hh_page_num in count(0):
+            page_hh_vacancies = search_vacancies_hh(lang, hh_page_num)
+            hh_vacancies.extend(page_hh_vacancies)
 
-        for page in count(0):
-            page_hh_vacanсies = search_vacancies_hh(lang, page)
-
-            for vacancy in page_hh_vacanсies:
-                hh_vacanсies.append(vacancy)
-            if page == 5:
+            if hh_end_page:
                 break
-        #sj_vacanсies = search_vacancies_sj(lang, sj_token)
+        
+        if hh_vacancies:
+            print("SALARY GO")
 
-        if hh_vacanсies:
-
-            hh_avg_salary = predict_rub_salary(hh_vacanсies,
-                                                   keyword_salary='salary',
-                                                   keyword_from='from',
-                                                   keyword_to='to')
+            hh_avg_salary = predict_rub_salary(hh_vacancies,
+                                               keyword_salary='salary',
+                                               keyword_from='from',
+                                               keyword_to='to')
             hh_vacancies_processed = hh_avg_salary[0]
             hh_average_salary = hh_avg_salary[1]
             HH_POPULAR_PROG_LANGS.append([lang,
                                           hh_vacancies_found,
                                           hh_vacancies_processed,
                                           hh_average_salary])
-        """
-        if sj_vacanсies:
-            sj_avg_salary = predict_rub_salary(hh_vacanсies,
+        '''
+        sj_end_page = False
+        sj_vacancies = []
+        sj_vacancies_found = 0
+
+        for sj_page_num in count(0):
+            page_sj_vacancies = search_vacancies_sj(lang, sj_page_num, sj_token)
+            sj_vacancies.extend(page_sj_vacancies)
+
+            if sj_end_page:
+                break
+
+        print(lang, 'SJ В обработке:', len(sj_vacancies), "Всего:", sj_vacancies_found)
+
+        if sj_vacancies:
+            sj_avg_salary = predict_rub_salary(sj_vacancies,
                                                keyword_from='payment_from',
                                                keyword_to='payment_to')
             sj_vacancies_processed = sj_avg_salary[0]
@@ -145,7 +167,7 @@ if __name__ == '__main__':
                                           sj_vacancies_found,
                                           sj_vacancies_processed,
                                           sj_average_salary])
-        """
+
     hh_table = make_table('Head Hunter', HH_POPULAR_PROG_LANGS)
     sj_table = make_table('SuperJob', SJ_POPULAR_PROG_LANGS)
     print(f'{hh_table}\n\n{sj_table}')
