@@ -6,7 +6,6 @@ import statistics as stat
 from itertools import count
 
 import requests
-
 from dotenv import load_dotenv
 from terminaltables import AsciiTable
 
@@ -14,12 +13,10 @@ HH_MIN_LIMIT = 100
 HH_POPULAR_PROG_LANGS = [['Язык программирования', 'Вакансий найдено',
                           'Вакансий обработано', 'Средняя зарплата']]
 
-# PROG_LANGS = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C', 'C#',
-#              'Go', 'Shell', 'Objective-C', 'Scala', 'Swift', 'TypeScript']
+PROG_LANGS = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C', 'C#',
+              'Go', 'Shell', 'Objective-C', 'Scala', 'Swift', 'TypeScript']
 
-PROG_LANGS = ['JavaScript']
-
-SJ_MIN_LIMIT = 20
+SJ_MIN_LIMIT = 10
 SJ_POPULAR_PROG_LANGS = [['Язык программирования', 'Вакансий найдено',
                           'Вакансий обработано', 'Средняя зарплата']]
 
@@ -54,22 +51,29 @@ def search_vacancies_hh(language: str, page_number: int) -> list:
 
 
 def search_vacancies_sj(language: str, page_number: int, token: str) -> list:
-    global SJ_MIN_LIMIT, SJ_end_page, sj_vacancies_found
+    global SJ_MIN_LIMIT, sj_end_page, sj_vacancies_found
 
     url = 'https://api.superjob.ru/2.0/vacancies/'
     head = {'X-Api-App-Id': token}
     payload = {'keyword': f'Программист {language}',
-               't': 14,
+               't': 4,
                'currency': 'rub',
-               'page_number': page_number,
-               'count': 100}
+               'page': page_number,
+               'count': 10}
     page_response = requests.get(url, headers=head, params=payload)
     page_response.raise_for_status()
     page_data = page_response.json()
 
+    end_page = 4
     sj_vacancies_found = int(page_data['total'])
     vacancies = (page_data['objects'])
-    print(page_response.url)
+
+    if sj_vacancies_found < SJ_MIN_LIMIT:
+        sj_end_page = True
+        return []
+
+    if page_number == end_page:
+        sj_end_page = True
 
     return vacancies
 
@@ -82,8 +86,7 @@ def predict_rub_salary(vacancies: list,
 
     for vacancy in vacancies:
         if keyword_salary:
-            if vacancy[keyword_salary] == None:
-                print(vacancy)
+            if not vacancy[keyword_salary]:
                 continue
             salary_from = vacancy[keyword_salary][keyword_from]
             salary_to = vacancy[keyword_salary][keyword_to]
@@ -118,7 +121,6 @@ if __name__ == '__main__':
     sj_token = os.environ["SJ_TOKEN"]
 
     for lang in PROG_LANGS:
-        '''
         hh_end_page = False
         hh_vacancies = []
         hh_vacancies_found = 0
@@ -131,8 +133,6 @@ if __name__ == '__main__':
                 break
         
         if hh_vacancies:
-            print("SALARY GO")
-
             hh_avg_salary = predict_rub_salary(hh_vacancies,
                                                keyword_salary='salary',
                                                keyword_from='from',
@@ -143,7 +143,7 @@ if __name__ == '__main__':
                                           hh_vacancies_found,
                                           hh_vacancies_processed,
                                           hh_average_salary])
-        '''
+
         sj_end_page = False
         sj_vacancies = []
         sj_vacancies_found = 0
@@ -154,8 +154,6 @@ if __name__ == '__main__':
 
             if sj_end_page:
                 break
-
-        print(lang, 'SJ В обработке:', len(sj_vacancies), "Всего:", sj_vacancies_found)
 
         if sj_vacancies:
             sj_avg_salary = predict_rub_salary(sj_vacancies,
