@@ -9,21 +9,20 @@ import requests
 from dotenv import load_dotenv
 from terminaltables import AsciiTable
 
-
 PROG_LANGS = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C', 'C#',
               'Go', 'Shell', 'Objective-C', 'Scala', 'Swift', 'TypeScript']
 
-HH_MIN_LIMIT = 100
+HH_MIN_NUM_VACANSIES = 100
 HH_SALARIES_TABLE = [['Язык программирования', 'Вакансий найдено',
                       'Вакансий обработано', 'Средняя зарплата']]
 
-SJ_MIN_LIMIT = 10
+SJ_MIN_NUM_VACANSIES = 10
 SJ_SALARIES_TABLE = [['Язык программирования', 'Вакансий найдено',
                       'Вакансий обработано', 'Средняя зарплата']]
 
 
 def search_vacancies_hh(language: str, page_number: int) -> list:
-    global HH_MIN_LIMIT, hh_end_page, hh_vacancies_found
+    global HH_MIN_NUM_VACANSIES, hh_end_page, hh_vacancies_found
 
     url = 'https://api.hh.ru/vacancies/'
     payload = {'text': f'Программист {language}',
@@ -41,7 +40,7 @@ def search_vacancies_hh(language: str, page_number: int) -> list:
     hh_vacancies_found = int(page_data['found'])
     vacancies = page_data['items']
 
-    if hh_vacancies_found < HH_MIN_LIMIT:
+    if hh_vacancies_found < HH_MIN_NUM_VACANSIES:
         hh_end_page = True
         return []
 
@@ -52,7 +51,7 @@ def search_vacancies_hh(language: str, page_number: int) -> list:
 
 
 def search_vacancies_sj(language: str, page_number: int, token: str) -> list:
-    global SJ_MIN_LIMIT, sj_end_page, sj_vacancies_found
+    global SJ_MIN_NUM_VACANSIES, sj_end_page, sj_vacancies_found
 
     url = 'https://api.superjob.ru/2.0/vacancies/'
     head = {'X-Api-App-Id': token}
@@ -69,7 +68,7 @@ def search_vacancies_sj(language: str, page_number: int, token: str) -> list:
     sj_vacancies_found = int(page_data['total'])
     vacancies = (page_data['objects'])
 
-    if sj_vacancies_found < SJ_MIN_LIMIT:
+    if sj_vacancies_found < SJ_MIN_NUM_VACANSIES:
         sj_end_page = True
         return []
 
@@ -79,14 +78,13 @@ def search_vacancies_sj(language: str, page_number: int, token: str) -> list:
     return vacancies
 
 
-def predict_rub_salary(salary_from: int, salary_to: int):
-
-    if not salary_from:
-        avg_salary = salary_to * 0.8
-    elif not salary_to:
-        avg_salary = salary_from * 1.2
+def predict_rub_salary(min_salary: int, max_salary: int):
+    if not min_salary:
+        avg_salary = max_salary * 0.8
+    elif not max_salary:
+        avg_salary = min_salary * 1.2
     else:
-        avg_salary = stat.mean([salary_from, salary_to])
+        avg_salary = stat.mean([min_salary, max_salary])
     return int(avg_salary)
 
 
@@ -123,7 +121,6 @@ if __name__ == '__main__':
                     vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
                     hh_avg_salaries.append(vacancy_avg_salary)
 
-
             hh_vacancies_processed = len(hh_avg_salaries)
             hh_average_salary = int(stat.mean(hh_avg_salaries))
 
@@ -152,7 +149,6 @@ if __name__ == '__main__':
                 if salary_from or salary_to:
                     vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
                     sj_avg_salaries.append(vacancy_avg_salary)
-
 
             sj_vacancies_processed = len(sj_avg_salaries)
             sj_average_salary = int(stat.mean(sj_avg_salaries))
