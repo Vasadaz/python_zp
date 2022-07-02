@@ -9,16 +9,17 @@ import requests
 from dotenv import load_dotenv
 from terminaltables import AsciiTable
 
-HH_MIN_LIMIT = 100
-HH_POPULAR_PROG_LANGS = [['Язык программирования', 'Вакансий найдено',
-                          'Вакансий обработано', 'Средняя зарплата']]
 
 PROG_LANGS = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C', 'C#',
               'Go', 'Shell', 'Objective-C', 'Scala', 'Swift', 'TypeScript']
 
+HH_MIN_LIMIT = 100
+HH_SALARIES_TABLE = [['Язык программирования', 'Вакансий найдено',
+                      'Вакансий обработано', 'Средняя зарплата']]
+
 SJ_MIN_LIMIT = 10
-SJ_POPULAR_PROG_LANGS = [['Язык программирования', 'Вакансий найдено',
-                          'Вакансий обработано', 'Средняя зарплата']]
+SJ_SALARIES_TABLE = [['Язык программирования', 'Вакансий найдено',
+                      'Вакансий обработано', 'Средняя зарплата']]
 
 
 def search_vacancies_hh(language: str, page_number: int) -> list:
@@ -78,35 +79,15 @@ def search_vacancies_sj(language: str, page_number: int, token: str) -> list:
     return vacancies
 
 
-def predict_rub_salary(vacancies: list,
-                       keyword_salary=None,
-                       keyword_from=None,
-                       keyword_to=None) -> list:
-    avg_salaries = []
+def predict_rub_salary(salary_from: int, salary_to: int):
 
-    for vacancy in vacancies:
-        if keyword_salary:
-            if not vacancy[keyword_salary]:
-                continue
-            salary_from = vacancy[keyword_salary][keyword_from]
-            salary_to = vacancy[keyword_salary][keyword_to]
-        else:
-            salary_from = vacancy[keyword_from]
-            salary_to = vacancy[keyword_to]
-
-        if not salary_from and not salary_to:
-            continue
-        elif not salary_from:
-            avg_salaries.append(salary_to * 0.8)
-        elif not salary_to:
-            avg_salaries.append(salary_from * 1.2)
-        else:
-            avg_salaries.append(stat.mean([salary_from, salary_to]))
-
-    avg_salaries_number = len(avg_salaries)
-    avg_salary = int(stat.mean(avg_salaries))
-
-    return [avg_salaries_number, avg_salary]
+    if not salary_from:
+        avg_salary = salary_to * 0.8
+    elif not salary_to:
+        avg_salary = salary_from * 1.2
+    else:
+        avg_salary = stat.mean([salary_from, salary_to])
+    return int(avg_salary)
 
 
 def make_table(title: str, table_data: list) -> str:
@@ -122,29 +103,37 @@ if __name__ == '__main__':
 
     for lang in PROG_LANGS:
         hh_end_page = False
+        hh_avg_salaries = []
         hh_vacancies = []
         hh_vacancies_found = 0
-        
+
         for hh_page_num in count(0):
             page_hh_vacancies = search_vacancies_hh(lang, hh_page_num)
             hh_vacancies.extend(page_hh_vacancies)
 
             if hh_end_page:
                 break
-        
+
         if hh_vacancies:
-            hh_avg_salary = predict_rub_salary(hh_vacancies,
-                                               keyword_salary='salary',
-                                               keyword_from='from',
-                                               keyword_to='to')
-            hh_vacancies_processed = hh_avg_salary[0]
-            hh_average_salary = hh_avg_salary[1]
-            HH_POPULAR_PROG_LANGS.append([lang,
-                                          hh_vacancies_found,
-                                          hh_vacancies_processed,
-                                          hh_average_salary])
+            for vacancy in hh_vacancies:
+                salary_from = vacancy['salary']['from']
+                salary_to = vacancy['salary']['to']
+
+                if salary_from or salary_to:
+                    vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
+                    hh_avg_salaries.append(vacancy_avg_salary)
+
+
+            hh_vacancies_processed = len(hh_avg_salaries)
+            hh_average_salary = int(stat.mean(hh_avg_salaries))
+
+            HH_SALARIES_TABLE.append([lang,
+                                      hh_vacancies_found,
+                                      hh_vacancies_processed,
+                                      hh_average_salary])
 
         sj_end_page = False
+        sj_avg_salaries = []
         sj_vacancies = []
         sj_vacancies_found = 0
 
@@ -156,16 +145,23 @@ if __name__ == '__main__':
                 break
 
         if sj_vacancies:
-            sj_avg_salary = predict_rub_salary(sj_vacancies,
-                                               keyword_from='payment_from',
-                                               keyword_to='payment_to')
-            sj_vacancies_processed = sj_avg_salary[0]
-            sj_average_salary = sj_avg_salary[1]
-            SJ_POPULAR_PROG_LANGS.append([lang,
-                                          sj_vacancies_found,
-                                          sj_vacancies_processed,
-                                          sj_average_salary])
+            for vacancy in sj_vacancies:
+                salary_from = vacancy['payment_from']
+                salary_to = vacancy['payment_to']
 
-    hh_table = make_table('Head Hunter', HH_POPULAR_PROG_LANGS)
-    sj_table = make_table('SuperJob', SJ_POPULAR_PROG_LANGS)
+                if salary_from or salary_to:
+                    vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
+                    sj_avg_salaries.append(vacancy_avg_salary)
+
+
+            sj_vacancies_processed = len(sj_avg_salaries)
+            sj_average_salary = int(stat.mean(sj_avg_salaries))
+
+            SJ_SALARIES_TABLE.append([lang,
+                                      sj_vacancies_found,
+                                      sj_vacancies_processed,
+                                      sj_average_salary])
+
+    hh_table = make_table('Head Hunter', HH_SALARIES_TABLE)
+    sj_table = make_table('SuperJob', SJ_SALARIES_TABLE)
     print(f'{hh_table}\n\n{sj_table}')
