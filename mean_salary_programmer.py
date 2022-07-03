@@ -12,17 +12,15 @@ from terminaltables import AsciiTable
 PROG_LANGS = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C', 'C#',
               'Go', 'Shell', 'Objective-C', 'Scala', 'Swift', 'TypeScript']
 
-HH_MIN_NUM_VACANSIES = 100
 HH_SALARIES_TABLE = [['Язык программирования', 'Вакансий найдено',
                       'Вакансий обработано', 'Средняя зарплата']]
 
-SJ_MIN_NUM_VACANSIES = 10
 SJ_SALARIES_TABLE = [['Язык программирования', 'Вакансий найдено',
                       'Вакансий обработано', 'Средняя зарплата']]
 
 
 def search_vacancies_hh(language: str, page_number: int) -> list:
-    global HH_MIN_NUM_VACANSIES, hh_end_page, hh_vacancies_found
+    min_num_vacansies = 100
 
     url = 'https://api.hh.ru/vacancies/'
     payload = {'text': f'Программист {language}',
@@ -37,21 +35,18 @@ def search_vacancies_hh(language: str, page_number: int) -> list:
     page_data = page_response.json()
 
     end_page = int(page_data['pages']) - 1
-    hh_vacancies_found = int(page_data['found'])
-    vacancies = page_data['items']
+    vacancies_found = int(page_data['found'])
+    vacancies = []
 
-    if hh_vacancies_found < HH_MIN_NUM_VACANSIES:
-        hh_end_page = True
-        return []
-
-    if page_number == end_page:
-        hh_end_page = True
-
-    return vacancies
+    if vacancies_found > min_num_vacansies and page_number <= end_page:
+        vacancies.extend(page_data['items'])
+        return vacancies
+    else:
+        return vacancies
 
 
 def search_vacancies_sj(language: str, page_number: int, token: str) -> list:
-    global SJ_MIN_NUM_VACANSIES, sj_end_page, sj_vacancies_found
+    min_num_vacansies = 20
 
     url = 'https://api.superjob.ru/2.0/vacancies/'
     head = {'X-Api-App-Id': token}
@@ -65,17 +60,14 @@ def search_vacancies_sj(language: str, page_number: int, token: str) -> list:
     page_data = page_response.json()
 
     end_page = 4
-    sj_vacancies_found = int(page_data['total'])
-    vacancies = (page_data['objects'])
+    vacancies_found = int(page_data['total'])
+    vacancies = []
 
-    if sj_vacancies_found < SJ_MIN_NUM_VACANSIES:
-        sj_end_page = True
-        return []
-
-    if page_number == end_page:
-        sj_end_page = True
-
-    return vacancies
+    if vacancies_found > min_num_vacansies and page_number <= end_page:
+        vacancies.extend(page_data['objects'])
+        return vacancies
+    else:
+        return vacancies
 
 
 def predict_rub_salary(min_salary: int, max_salary: int):
@@ -100,16 +92,15 @@ if __name__ == '__main__':
     sj_token = os.environ["SJ_TOKEN"]
 
     for lang in PROG_LANGS:
-        hh_end_page = False
         hh_avg_salaries = []
         hh_vacancies = []
-        hh_vacancies_found = 0
 
         for hh_page_num in count(0):
             page_hh_vacancies = search_vacancies_hh(lang, hh_page_num)
-            hh_vacancies.extend(page_hh_vacancies)
 
-            if hh_end_page:
+            if page_hh_vacancies:
+                hh_vacancies.extend(page_hh_vacancies)
+            else:
                 break
 
         if hh_vacancies:
@@ -121,24 +112,24 @@ if __name__ == '__main__':
                     vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
                     hh_avg_salaries.append(vacancy_avg_salary)
 
-            hh_vacancies_processed = len(hh_avg_salaries)
             hh_average_salary = int(stat.mean(hh_avg_salaries))
+            hh_vacancies_found = len(hh_vacancies)
+            hh_vacancies_processed = len(hh_avg_salaries)
 
             HH_SALARIES_TABLE.append([lang,
                                       hh_vacancies_found,
                                       hh_vacancies_processed,
                                       hh_average_salary])
 
-        sj_end_page = False
         sj_avg_salaries = []
         sj_vacancies = []
-        sj_vacancies_found = 0
 
         for sj_page_num in count(0):
             page_sj_vacancies = search_vacancies_sj(lang, sj_page_num, sj_token)
-            sj_vacancies.extend(page_sj_vacancies)
 
-            if sj_end_page:
+            if page_sj_vacancies:
+                sj_vacancies.extend(page_sj_vacancies)
+            else:
                 break
 
         if sj_vacancies:
@@ -150,8 +141,9 @@ if __name__ == '__main__':
                     vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
                     sj_avg_salaries.append(vacancy_avg_salary)
 
-            sj_vacancies_processed = len(sj_avg_salaries)
             sj_average_salary = int(stat.mean(sj_avg_salaries))
+            sj_vacancies_found = len(sj_vacancies)
+            sj_vacancies_processed = len(sj_avg_salaries)
 
             SJ_SALARIES_TABLE.append([lang,
                                       sj_vacancies_found,
