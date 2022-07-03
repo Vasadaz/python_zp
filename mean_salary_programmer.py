@@ -86,6 +86,14 @@ def make_table(title: str, table_data: list) -> str:
     return table_instance.table
 
 
+def prepare_statistics(static_tab: list, vacancies: list, avg_salaries: list):
+    average_salary = int(stat.mean(avg_salaries))
+    vacancies_found = len(vacancies)
+    vacancies_processed = len(avg_salaries)
+
+    static_tab.append([lang, vacancies_found, vacancies_processed, average_salary])
+
+
 if __name__ == '__main__':
     dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
     load_dotenv(dotenv_path)
@@ -94,12 +102,22 @@ if __name__ == '__main__':
     for lang in PROG_LANGS:
         hh_avg_salaries = []
         hh_vacancies = []
+        sj_avg_salaries = []
+        sj_vacancies = []
 
         for hh_page_num in count(0):
             page_hh_vacancies = search_vacancies_hh(lang, hh_page_num)
 
             if page_hh_vacancies:
                 hh_vacancies.extend(page_hh_vacancies)
+            else:
+                break
+
+        for sj_page_num in count(0):
+            page_sj_vacancies = search_vacancies_sj(lang, sj_page_num, sj_token)
+
+            if page_sj_vacancies:
+                sj_vacancies.extend(page_sj_vacancies)
             else:
                 break
 
@@ -112,25 +130,7 @@ if __name__ == '__main__':
                     vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
                     hh_avg_salaries.append(vacancy_avg_salary)
 
-            hh_average_salary = int(stat.mean(hh_avg_salaries))
-            hh_vacancies_found = len(hh_vacancies)
-            hh_vacancies_processed = len(hh_avg_salaries)
-
-            HH_SALARIES_TABLE.append([lang,
-                                      hh_vacancies_found,
-                                      hh_vacancies_processed,
-                                      hh_average_salary])
-
-        sj_avg_salaries = []
-        sj_vacancies = []
-
-        for sj_page_num in count(0):
-            page_sj_vacancies = search_vacancies_sj(lang, sj_page_num, sj_token)
-
-            if page_sj_vacancies:
-                sj_vacancies.extend(page_sj_vacancies)
-            else:
-                break
+            prepare_statistics(HH_SALARIES_TABLE, hh_vacancies, hh_avg_salaries)
 
         if sj_vacancies:
             for vacancy in sj_vacancies:
@@ -141,14 +141,7 @@ if __name__ == '__main__':
                     vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
                     sj_avg_salaries.append(vacancy_avg_salary)
 
-            sj_average_salary = int(stat.mean(sj_avg_salaries))
-            sj_vacancies_found = len(sj_vacancies)
-            sj_vacancies_processed = len(sj_avg_salaries)
-
-            SJ_SALARIES_TABLE.append([lang,
-                                      sj_vacancies_found,
-                                      sj_vacancies_processed,
-                                      sj_average_salary])
+            prepare_statistics(SJ_SALARIES_TABLE, sj_vacancies, sj_avg_salaries)
 
     hh_table = make_table('Head Hunter', HH_SALARIES_TABLE)
     sj_table = make_table('SuperJob', SJ_SALARIES_TABLE)
