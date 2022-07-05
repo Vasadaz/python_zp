@@ -19,8 +19,8 @@ SJ_SALARIES_TABLE = [['Язык программирования', 'Ваканс
                       'Вакансий обработано', 'Средняя зарплата']]
 
 
-def search_vacancies_hh(language: str, page_number: int) -> list:
-    min_num_vacansies = 100
+def search_hh_vacancies(language: str, page_number: int) -> list:
+    vacansies_min_num = 100
 
     url = 'https://api.hh.ru/vacancies/'
     payload = {'text': f'Программист {language}',
@@ -32,21 +32,21 @@ def search_vacancies_hh(language: str, page_number: int) -> list:
 
     page_response = requests.get(url, params=payload)
     page_response.raise_for_status()
-    page_data = page_response.json()
+    page_response_json = page_response.json()
 
-    end_page = int(page_data['pages']) - 1
-    vacancies_found = int(page_data['found'])
+    end_page = int(page_response_json['pages']) - 1
+    vacancies_found = int(page_response_json['found'])
     vacancies = []
 
-    if vacancies_found > min_num_vacansies and page_number <= end_page:
-        vacancies.extend(page_data['items'])
+    if vacancies_found > vacansies_min_num and page_number <= end_page:
+        vacancies.extend(page_response_json['items'])
         return vacancies
     else:
         return vacancies
 
 
-def search_vacancies_sj(language: str, page_number: int, token: str) -> list:
-    min_num_vacansies = 20
+def search_sj_vacancies(language: str, page_number: int, token: str) -> list:
+    vacansies_min_num = 20
 
     url = 'https://api.superjob.ru/2.0/vacancies/'
     head = {'X-Api-App-Id': token}
@@ -57,14 +57,14 @@ def search_vacancies_sj(language: str, page_number: int, token: str) -> list:
                'count': 10}
     page_response = requests.get(url, headers=head, params=payload)
     page_response.raise_for_status()
-    page_data = page_response.json()
+    page_response_json = page_response.json()
 
     end_page = 4
-    vacancies_found = int(page_data['total'])
+    vacancies_found = int(page_response_json['total'])
     vacancies = []
 
-    if vacancies_found > min_num_vacansies and page_number <= end_page:
-        vacancies.extend(page_data['objects'])
+    if vacancies_found > vacansies_min_num and page_number <= end_page:
+        vacancies.extend(page_response_json['objects'])
         return vacancies
     else:
         return vacancies
@@ -106,7 +106,7 @@ if __name__ == '__main__':
         sj_vacancies = []
 
         for hh_page_num in count(0):
-            page_hh_vacancies = search_vacancies_hh(lang, hh_page_num)
+            page_hh_vacancies = search_hh_vacancies(lang, hh_page_num)
 
             if page_hh_vacancies:
                 hh_vacancies.extend(page_hh_vacancies)
@@ -114,7 +114,7 @@ if __name__ == '__main__':
                 break
 
         for sj_page_num in count(0):
-            page_sj_vacancies = search_vacancies_sj(lang, sj_page_num, sj_token)
+            page_sj_vacancies = search_sj_vacancies(lang, sj_page_num, sj_token)
 
             if page_sj_vacancies:
                 sj_vacancies.extend(page_sj_vacancies)

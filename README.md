@@ -6,7 +6,7 @@ JavaScript, Java, Python, Ruby, PHP, C++, C, C#, Go, Shell, Objective-C, Scala,
 Swift, TypeScript.
 
 ### Как работает
-Скрипт mean_salary_programmer.py выполняет запросы к API Head Hunter и SuperJob для получения 
+Скрипт mean_programmer_salary.py выполняет запросы к API Head Hunter и SuperJob для получения 
 вакансий за последние 30 дней. 
 По результатам запроса определяет те языки программирования, которые попадут в результат вывода.
 Критерии попадания в вывод:
