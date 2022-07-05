@@ -121,26 +121,26 @@ if __name__ == '__main__':
             else:
                 break
 
+        for vacancy in hh_vacancies:
+            salary_from = vacancy['salary']['from']
+            salary_to = vacancy['salary']['to']
+
+            if salary_from or salary_to:
+                vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
+                hh_avg_salaries.append(vacancy_avg_salary)
+
+        for vacancy in sj_vacancies:
+            salary_from = vacancy['payment_from']
+            salary_to = vacancy['payment_to']
+
+            if salary_from or salary_to:
+                vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
+                sj_avg_salaries.append(vacancy_avg_salary)
+
         if hh_vacancies:
-            for vacancy in hh_vacancies:
-                salary_from = vacancy['salary']['from']
-                salary_to = vacancy['salary']['to']
-
-                if salary_from or salary_to:
-                    vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
-                    hh_avg_salaries.append(vacancy_avg_salary)
-
             prepare_statistics(HH_SALARIES_TABLE, hh_vacancies, hh_avg_salaries)
 
         if sj_vacancies:
-            for vacancy in sj_vacancies:
-                salary_from = vacancy['payment_from']
-                salary_to = vacancy['payment_to']
-
-                if salary_from or salary_to:
-                    vacancy_avg_salary = predict_rub_salary(salary_from, salary_to)
-                    sj_avg_salaries.append(vacancy_avg_salary)
-
             prepare_statistics(SJ_SALARIES_TABLE, sj_vacancies, sj_avg_salaries)
 
     hh_table = make_table('Head Hunter', HH_SALARIES_TABLE)
