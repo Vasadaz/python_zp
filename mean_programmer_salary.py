@@ -21,10 +21,11 @@ SJ_SALARIES_TABLE = [['Язык программирования', 'Ваканс
 
 def search_hh_vacancies(language: str, page_number: int) -> list:
     vacansies_min_num = 100
+    city_id = {'Moscow': 1}
 
     url = 'https://api.hh.ru/vacancies/'
     payload = {'text': f'Программист {language}',
-               'area': '1',
+               'area': city_id['Moscow'],
                'page': page_number,
                'per_page': 100,
                'currency': 'RUR',
@@ -47,11 +48,12 @@ def search_hh_vacancies(language: str, page_number: int) -> list:
 
 def search_sj_vacancies(language: str, page_number: int, token: str) -> list:
     vacansies_min_num = 20
+    city_id = {'Moscow': 4}
 
     url = 'https://api.superjob.ru/2.0/vacancies/'
     head = {'X-Api-App-Id': token}
     payload = {'keyword': f'Программист {language}',
-               't': 4,
+               't': city_id['Moscow'],
                'currency': 'rub',
                'page': page_number,
                'count': 10}
