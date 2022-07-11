@@ -133,6 +133,10 @@ if __name__ == '__main__':
         if sj_vacancies:
             prepare_statistics(SJ_SALARIES_TABLE, sj_vacancies, sj_avg_salaries)
 
-    hh_table = make_table('Head Hunter', HH_SALARIES_TABLE)
-    sj_table = make_table('SuperJob', SJ_SALARIES_TABLE)
-    print(f'{hh_table}\n\n{sj_table}')
+    if len(HH_SALARIES_TABLE) > 1:
+        hh_table = make_table('Head Hunter', HH_SALARIES_TABLE)
+        print(f'{hh_table}', end='\n\n')
+
+    if len(SJ_SALARIES_TABLE) > 1:
+        sj_table = make_table('SuperJob', SJ_SALARIES_TABLE)
+        print(f'{sj_table}', end='\n\n')
