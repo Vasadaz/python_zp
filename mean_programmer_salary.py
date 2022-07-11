@@ -33,21 +33,15 @@ def search_hh_vacancies(language: str, page_number: int) -> list:
 
     page_response = requests.get(url, params=payload)
     page_response.raise_for_status()
-    page_response_json = page_response.json()
+    page_resources = page_response.json()
+    vacancies_found = int(page_resources['found'])
 
-    end_page = int(page_response_json['pages']) - 1
-    vacancies_found = int(page_response_json['found'])
-    vacancies = []
-
-    if vacancies_found > vacansies_min_num and page_number <= end_page:
-        vacancies.extend(page_response_json['items'])
-        return vacancies
-    else:
-        return vacancies
+    if vacancies_found > vacansies_min_num:
+        return page_resources['items']
 
 
 def search_sj_vacancies(language: str, page_number: int, token: str) -> list:
-    vacansies_min_num = 20
+    vacansies_min_num = 100
     cities = {'Moscow': 4}
 
     url = 'https://api.superjob.ru/2.0/vacancies/'
@@ -56,20 +50,14 @@ def search_sj_vacancies(language: str, page_number: int, token: str) -> list:
                't': cities['Moscow'],
                'currency': 'rub',
                'page': page_number,
-               'count': 10}
+               'count': 100}
     page_response = requests.get(url, headers=head, params=payload)
     page_response.raise_for_status()
-    page_response_json = page_response.json()
+    page_resources = page_response.json()
+    vacancies_found = int(page_resources['total'])
 
-    end_page = 4
-    vacancies_found = int(page_response_json['total'])
-    vacancies = []
-
-    if vacancies_found > vacansies_min_num and page_number <= end_page:
-        vacancies.extend(page_response_json['objects'])
-        return vacancies
-    else:
-        return vacancies
+    if vacancies_found > vacansies_min_num:
+        return page_resources['objects']
 
 
 def predict_rub_salary(min_salary: int, max_salary: int):
