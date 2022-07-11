@@ -12,11 +12,11 @@ from terminaltables import AsciiTable
 PROG_LANGS = ['JavaScript', 'Java', 'Python', 'Ruby', 'PHP', 'C++', 'C', 'C#',
               'Go', 'Shell', 'Objective-C', 'Scala', 'Swift', 'TypeScript']
 
-HH_SALARIES_TABLE = [['Язык программирования', 'Вакансий найдено',
-                      'Вакансий обработано', 'Средняя зарплата']]
+TABLE_TITLES = ['Язык программирования', 'Вакансий найдено',
+                'Вакансий обработано', 'Средняя зарплата']
 
-SJ_SALARIES_TABLE = [['Язык программирования', 'Вакансий найдено',
-                      'Вакансий обработано', 'Средняя зарплата']]
+HH_SALARIES_TABLE = [TABLE_TITLES]
+SJ_SALARIES_TABLE = [TABLE_TITLES]
 
 
 def search_hh_vacancies(language: str, page_number: int) -> list:
